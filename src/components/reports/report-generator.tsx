@@ -74,7 +74,7 @@ export default function ReportGenerator({
             toDate.setHours(23, 59, 59, 999); // End of the day
             isDateInRange = transactionDate >= fromDate && transactionDate <= toDate;
         } else {
-            isDateInRange = transactionDate >= fromDate;
+            isDateInRange = transactionDate.toDateString() === fromDate.toDateString();
         }
       }
       
