@@ -59,7 +59,7 @@ export default function BalanceChart({ transactions }: BalanceChartProps) {
             <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `RS ${value}`} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Rs. ${value}`} />
                 <Tooltip 
                     cursor={{fill: 'hsl(var(--muted))'}}
                     contentStyle={{

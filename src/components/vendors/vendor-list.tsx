@@ -50,7 +50,7 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(amount);
-        return `RS ${formatted}`;
+        return `Rs. ${formatted}`;
     };
 
     const formatCurrencyWithType = (amount: number, type: 'income' | 'expense') => {

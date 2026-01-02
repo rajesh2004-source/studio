@@ -94,7 +94,7 @@ export default function TransactionsTable({
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(amount);
-        const symbol = `RS ${formatted}`;
+        const symbol = `Rs. ${formatted}`;
 
         return <div className={`font-medium ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{type === 'income' ? `+${symbol}` : `-${symbol}`}</div>;
       },

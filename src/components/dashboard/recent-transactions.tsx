@@ -26,7 +26,7 @@ export default function RecentTransactions({ transactions, vendors }: RecentTran
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(amount);
-    const symbol = `RS ${formatted}`;
+    const symbol = `Rs. ${formatted}`;
     return type === 'income' ? `+${symbol}` : `-${symbol}`;
   };
 

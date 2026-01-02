@@ -30,7 +30,7 @@ export default function StatCards({ transactions, initialBalance }: StatCardsPro
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(amount);
-    return `RS ${formatted}`;
+    return `Rs. ${formatted}`;
   };
   
   return (
