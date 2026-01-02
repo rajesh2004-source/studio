@@ -1,9 +1,11 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createSession, deleteSession } from './auth';
-import { getUsers } from './data';
+import { findUserByEmail, addUser, addTransaction, updateTransaction, deleteTransaction as dbDeleteTransaction } from './data';
+import type { Transaction } from './definitions';
 
 export type AuthState = {
   message?: string;
@@ -25,19 +27,13 @@ export async function login(prevState: AuthState | undefined, formData: FormData
     };
   }
   
-  const { email } = validatedFields.data;
+  const { email, password } = validatedFields.data;
   
-  // MOCK: In a real app, you would look up the user in the database
-  const users = getUsers();
-  const user = users.find(u => u.email === email);
+  const user = findUserByEmail(email);
 
-  if (!user) {
+  if (!user || user.password !== password) {
     return { message: 'Invalid credentials.' };
   }
-
-  // MOCK: In a real app, you would verify the password
-  // const passwordsMatch = await bcrypt.compare(password, user.password);
-  // if (!passwordsMatch) return { message: 'Invalid credentials.' };
   
   await createSession(user);
   redirect('/dashboard');
@@ -56,14 +52,20 @@ export async function signup(prevState: AuthState | undefined, formData: FormDat
   );
 
   if (!validatedFields.success) {
+    const errorMessages = validatedFields.error.errors.map(e => e.message).join(' ');
     return {
-      message: 'Invalid form data. Please check your inputs.',
+      message: errorMessages,
     };
   }
+  
+  const { name, email, password } = validatedFields.data;
 
-  // MOCK: In a real app, you'd create a new user in the database
-  const { name, email } = validatedFields.data;
-  const newUser = { id: Date.now().toString(), name, email };
+  if (findUserByEmail(email)) {
+    return { message: 'An account with this email already exists.' };
+  }
+  
+  const newUser = { id: Date.now().toString(), name, email, password };
+  addUser(newUser);
   
   await createSession(newUser);
   redirect('/dashboard');
@@ -73,4 +75,101 @@ export async function signup(prevState: AuthState | undefined, formData: FormDat
 export async function logout() {
   await deleteSession();
   redirect('/login');
+}
+
+
+export type FormState = {
+    message: string;
+    errors?: Record<string, string[] | undefined>;
+};
+
+const TransactionSchema = z.object({
+    id: z.string(),
+    date: z.string().refine(d => !isNaN(Date.parse(d)), { message: "Invalid date" }),
+    description: z.string().min(1, "Description is required"),
+    vendorId: z.string().min(1, "Vendor is required"),
+    categoryId: z.string().min(1, "Category is required"),
+    amount: z.coerce.number().gt(0, "Amount must be greater than 0"),
+    type: z.enum(['income', 'expense']),
+    paymentMode: z.enum(['cash', 'card', 'online']),
+    notes: z.string().optional(),
+});
+   
+const CreateTransaction = TransactionSchema.omit({ id: true });
+
+export async function createTransaction(prevState: FormState, formData: FormData) {
+    const validatedFields = CreateTransaction.safeParse({
+        date: formData.get('date'),
+        description: formData.get('description'),
+        vendorId: formData.get('vendorId'),
+        categoryId: formData.get('categoryId'),
+        amount: formData.get('amount'),
+        type: formData.get('type'),
+        paymentMode: formData.get('paymentMode'),
+        notes: formData.get('notes'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+          message: 'Failed to create transaction. Please check your inputs.',
+          errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    const newTransaction: Transaction = {
+        id: `t${Date.now()}`,
+        ...validatedFields.data,
+    };
+
+    try {
+        addTransaction(newTransaction);
+    } catch (error) {
+        return { message: 'Database Error: Failed to Create Transaction.' };
+    }
+    
+    revalidatePath('/transactions');
+    revalidatePath('/dashboard');
+    return { message: 'Successfully created transaction' };
+}
+
+const UpdateTransaction = TransactionSchema.omit({ id: true });
+
+export async function editTransaction(id: string, prevState: FormState, formData: FormData) {
+    const validatedFields = UpdateTransaction.safeParse({
+        date: formData.get('date'),
+        description: formData.get('description'),
+        vendorId: formData.get('vendorId'),
+        categoryId: formData.get('categoryId'),
+        amount: formData.get('amount'),
+        type: formData.get('type'),
+        paymentMode: formData.get('paymentMode'),
+        notes: formData.get('notes'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+          message: 'Failed to update transaction. Please check your inputs.',
+          errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    try {
+        updateTransaction(id, validatedFields.data);
+    } catch (error) {
+        return { message: 'Database Error: Failed to Update Transaction.' };
+    }
+
+    revalidatePath('/transactions');
+    revalidatePath('/dashboard');
+    return { message: 'Successfully updated transaction' };
+}
+
+export async function deleteTransactionAction(id: string) {
+    try {
+        dbDeleteTransaction(id);
+        revalidatePath('/transactions');
+        revalidatePath('/dashboard');
+    } catch (error) {
+        return { message: 'Database Error: Failed to Delete Transaction.' };
+    }
 }

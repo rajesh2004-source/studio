@@ -1,6 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTransactions, getCategories, getVendors } from "@/lib/data";
+import ReportGenerator from "@/components/reports/report-generator";
 
 export default function ReportsPage() {
+    const transactions = getTransactions();
+    const categories = getCategories();
+    const vendors = getVendors();
+
     return (
         <div className="space-y-8">
              <div>
@@ -11,15 +16,7 @@ export default function ReportsPage() {
                     Generate reports and get AI-powered insights.
                 </p>
             </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Reporting Tools</CardTitle>
-                    <CardDescription>Feature coming soon.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>This is where the reporting filters, data visualization, and AI summary tools will be.</p>
-                </CardContent>
-            </Card>
+            <ReportGenerator transactions={transactions} categories={categories} vendors={vendors} />
         </div>
     );
 }
