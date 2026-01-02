@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
 import type { FormState } from '@/lib/actions';
@@ -18,7 +18,9 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Bot, Loader2 } from 'lucide-react';
+import { suggestTransactionCategories } from '@/ai/flows/suggest-transaction-categories';
+import { Badge } from '../ui/badge';
 
 type TransactionFormProps = {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
@@ -42,6 +44,12 @@ export default function TransactionForm({ action, initialData, vendors, categori
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [vendorId, setVendorId] = useState(initialData?.vendorId || '');
+  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
+  const [isSuggesting, startSuggestionTransition] = useTransition();
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(initialData?.categoryId);
+
   useEffect(() => {
     if (state.message && !state.errors) {
       toast({
@@ -53,6 +61,25 @@ export default function TransactionForm({ action, initialData, vendors, categori
       }
     }
   }, [state, toast, onFormSuccess]);
+
+  const handleSuggestCategories = () => {
+    const vendorName = vendors.find(v => v.id === vendorId)?.name || '';
+    if (!description || !vendorName) return;
+
+    startSuggestionTransition(async () => {
+      const result = await suggestTransactionCategories({ description, vendor: vendorName });
+      
+      const validSuggestions = result.suggestedCategories
+        .map(suggestedName => {
+          const found = categories.find(c => c.name.toLowerCase() === suggestedName.toLowerCase());
+          return found;
+        })
+        .filter((c): c is Category => !!c)
+        .map(c => c.id);
+
+      setSuggestedCategories(validSuggestions);
+    });
+  };
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
@@ -70,14 +97,14 @@ export default function TransactionForm({ action, initialData, vendors, categori
       </div>
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
-        <Input id="description" name="description" placeholder="e.g. Office lunch" defaultValue={initialData?.description} required />
+        <Input id="description" name="description" placeholder="e.g. Office lunch" value={description} onChange={(e) => setDescription(e.target.value)} required />
         {state.errors?.description && <p className="text-sm text-destructive">{state.errors.description}</p>}
       </div>
       
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="vendorId">Vendor</Label>
-          <Select name="vendorId" defaultValue={initialData?.vendorId}>
+          <Select name="vendorId" value={vendorId} onValueChange={setVendorId}>
             <SelectTrigger>
               <SelectValue placeholder="Select a vendor" />
             </SelectTrigger>
@@ -91,7 +118,7 @@ export default function TransactionForm({ action, initialData, vendors, categori
         </div>
         <div className="space-y-2">
           <Label htmlFor="categoryId">Category</Label>
-          <Select name="categoryId" defaultValue={initialData?.categoryId}>
+          <Select name="categoryId" value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger>
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
@@ -104,6 +131,27 @@ export default function TransactionForm({ action, initialData, vendors, categori
           {state.errors?.categoryId && <p className="text-sm text-destructive">{state.errors.categoryId}</p>}
         </div>
       </div>
+
+       <div className="space-y-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleSuggestCategories} disabled={isSuggesting || !description || !vendorId}>
+                {isSuggesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                Suggest Category
+            </Button>
+            {suggestedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                    {suggestedCategories.map(catId => (
+                        <Badge
+                            key={catId}
+                            variant={selectedCategory === catId ? "default" : "secondary"}
+                            onClick={() => setSelectedCategory(catId)}
+                            className="cursor-pointer"
+                        >
+                            {categories.find(c => c.id === catId)?.name}
+                        </Badge>
+                    ))}
+                </div>
+            )}
+        </div>
 
        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -128,8 +176,9 @@ export default function TransactionForm({ action, initialData, vendors, categori
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="card">Card</SelectItem>
-                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="bank">Bank</SelectItem>
+                        <SelectItem value="others">Others</SelectItem>
                     </SelectContent>
                 </Select>
                 {state.errors?.paymentMode && <p className="text-sm text-destructive">{state.errors.paymentMode}</p>}

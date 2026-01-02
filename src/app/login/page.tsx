@@ -1,7 +1,7 @@
 import Link from "next/link";
 import LoginForm from "@/components/auth/login-form";
 
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: { searchParams?: { message?: string } }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
@@ -24,7 +24,7 @@ export default function LoginPage() {
             </Link>
           <p className="text-muted-foreground mt-2">Welcome back! Please enter your details.</p>
         </div>
-        <LoginForm />
+        <LoginForm loginMessage={searchParams?.message} />
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="underline text-primary">

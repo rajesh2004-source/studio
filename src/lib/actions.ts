@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createSession, deleteSession } from './auth';
-import { findUserByEmail, addUser, addTransaction, updateTransaction, deleteTransaction as dbDeleteTransaction } from './data';
+import { findUserByEmail, addUser, addTransaction, updateTransaction, deleteTransaction as dbDeleteTransaction, addVendor, updateVendor as dbUpdateVendor, deleteVendor as dbDeleteVendor, getVendorByName } from './data';
 import type { Transaction } from './definitions';
 
 export type AuthState = {
@@ -67,8 +67,8 @@ export async function signup(prevState: AuthState | undefined, formData: FormDat
   const newUser = { id: Date.now().toString(), name, email, password };
   await addUser(newUser);
   
-  await createSession(newUser);
-  redirect('/dashboard');
+  // Do not create session here, redirect to login
+  redirect('/login?message=Account created successfully! Please log in.');
 }
 
 
@@ -91,7 +91,7 @@ const TransactionSchema = z.object({
     categoryId: z.string().min(1, "Category is required"),
     amount: z.coerce.number().gt(0, "Amount must be greater than 0"),
     type: z.enum(['income', 'expense']),
-    paymentMode: z.enum(['cash', 'card', 'online']),
+    paymentMode: z.enum(['cash', 'upi', 'bank', 'others']),
     notes: z.string().optional(),
 });
    
@@ -161,6 +161,7 @@ export async function editTransaction(id: string, prevState: FormState, formData
 
     revalidatePath('/transactions');
     revalidatePath('/dashboard');
+    revalidatePath('/vendors');
     return { message: 'Successfully updated transaction' };
 }
 
@@ -169,7 +170,83 @@ export async function deleteTransactionAction(id: string) {
         await dbDeleteTransaction(id);
         revalidatePath('/transactions');
         revalidatePath('/dashboard');
+        revalidatePath('/vendors');
     } catch (error) {
         return { message: 'Database Error: Failed to Delete Transaction.' };
+    }
+}
+
+
+// Vendor Actions
+
+const VendorSchema = z.object({
+    id: z.string(),
+    name: z.string().min(1, "Name is required"),
+    contactPerson: z.string().optional(),
+    email: z.string().email({ message: "Invalid email" }).optional().or(z.literal('')),
+    phone: z.string().optional(),
+});
+
+const CreateVendor = VendorSchema.omit({ id: true });
+
+export async function createVendor(prevState: FormState, formData: FormData) {
+    const validatedFields = CreateVendor.safeParse(Object.fromEntries(formData.entries()));
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Failed to create vendor. Please check your inputs.',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    const { name } = validatedFields.data;
+    if (await getVendorByName(name)) {
+        return {
+            message: 'A vendor with this name already exists.',
+            errors: { name: ['Name already exists'] }
+        };
+    }
+
+    try {
+        await addVendor(validatedFields.data);
+    } catch (error) {
+        return { message: 'Database Error: Failed to Create Vendor.' };
+    }
+
+    revalidatePath('/vendors');
+    revalidatePath('/transactions');
+    return { message: 'Successfully created vendor' };
+}
+
+const UpdateVendor = VendorSchema.omit({ id: true });
+
+export async function updateVendor(id: string, prevState: FormState, formData: FormData) {
+    const validatedFields = UpdateVendor.safeParse(Object.fromEntries(formData.entries()));
+    
+    if (!validatedFields.success) {
+        return {
+            message: 'Failed to update vendor. Please check your inputs.',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    try {
+        await dbUpdateVendor(id, validatedFields.data);
+    } catch (error) {
+        return { message: 'Database Error: Failed to Update Vendor.' };
+    }
+    
+    revalidatePath('/vendors');
+    revalidatePath('/transactions');
+    return { message: 'Successfully updated vendor' };
+}
+
+export async function deleteVendor(id: string) {
+    try {
+        await dbDeleteVendor(id);
+        revalidatePath('/vendors');
+        revalidatePath('/transactions');
+    } catch (error) {
+        return { message: 'Database Error: Failed to Delete Vendor.' };
     }
 }

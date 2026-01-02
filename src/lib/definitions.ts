@@ -6,7 +6,7 @@ export type Transaction = {
   categoryId: string;
   amount: number;
   type: 'income' | 'expense';
-  paymentMode: 'cash' | 'card' | 'online';
+  paymentMode: 'cash' | 'upi' | 'bank' | 'others';
   notes?: string;
 };
 

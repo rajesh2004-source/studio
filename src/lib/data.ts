@@ -1,5 +1,5 @@
 import { getDb } from './db';
-import type { User, Transaction } from './definitions';
+import type { User, Transaction, Vendor } from './definitions';
 
 export const getInitialBalance = () => 500.00;
 
@@ -28,6 +28,39 @@ export async function getVendorById(id: string) {
     const db = await getDb();
     return db.data.vendors.find(v => v.id === id);
 }
+
+export async function getVendorByName(name: string) {
+    const db = await getDb();
+    return db.data.vendors.find(v => v.name.toLowerCase() === name.toLowerCase());
+}
+
+export async function addVendor(vendor: Omit<Vendor, 'id'>) {
+    const db = await getDb();
+    const newVendor = { id: `v${Date.now()}`, ...vendor };
+    db.data.vendors.push(newVendor);
+    await db.write();
+}
+
+export async function updateVendor(id: string, updatedVendor: Partial<Omit<Vendor, 'id'>>) {
+    const db = await getDb();
+    const index = db.data.vendors.findIndex(v => v.id === id);
+    if (index !== -1) {
+        db.data.vendors[index] = { ...db.data.vendors[index], ...updatedVendor };
+        await db.write();
+    }
+}
+
+export async function deleteVendor(id: string) {
+    const db = await getDb();
+    // Check if vendor is used in any transactions
+    const isUsed = db.data.transactions.some(t => t.vendorId === id);
+    if (isUsed) {
+        throw new Error("Cannot delete vendor with associated transactions.");
+    }
+    db.data.vendors = db.data.vendors.filter(v => v.id !== id);
+    await db.write();
+}
+
 
 export async function getCategories() {
     const db = await getDb();

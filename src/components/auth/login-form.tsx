@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { login } from '@/lib/actions';
@@ -7,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '../ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -19,7 +20,7 @@ function SubmitButton() {
   );
 }
 
-export default function LoginForm() {
+export default function LoginForm({ loginMessage }: { loginMessage?: string }) {
   const [state, dispatch] = useActionState(login, undefined);
 
   return (
@@ -29,6 +30,15 @@ export default function LoginForm() {
           <CardTitle className="font-headline text-2xl">Login</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {loginMessage && (
+             <Alert variant="default" className="border-green-500/50 text-green-700 dark:border-green-500 [&>svg]:text-green-500">
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Success</AlertTitle>
+                <AlertDescription>
+                    {loginMessage}
+                </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" placeholder="m@example.com" required defaultValue="admin@pettyflow.com" />
