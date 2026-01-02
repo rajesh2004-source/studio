@@ -73,7 +73,7 @@ export function EditVendorSheet({ vendor }: { vendor: Vendor }) {
                     <SheetDescription>
                         Update the vendor details. Click save when you&apos;re done.
                     </SheetDescription>
-                </Header>
+                </SheetHeader>
                  <div className="mt-4">
                     <VendorForm 
                         action={updateVendorWithId} 

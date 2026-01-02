@@ -5,6 +5,12 @@
       "name": "Admin User",
       "email": "admin@pettyflow.com",
       "password": "password123"
+    },
+    {
+      "id": "1767370048556",
+      "name": "Mahale Rajesh Nanabhai",
+      "email": "rajeshmahale103@gmail.com",
+      "password": "123456"
     }
   ],
   "vendors": [
