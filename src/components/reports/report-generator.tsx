@@ -1,10 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { DateRangePicker } from '@/components/reports/date-range-picker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { generateReportSummary } from '@/ai/flows/generate-ai-summaries';
 import { Bot, Download, Loader2 } from 'lucide-react';
 import { Category, Transaction, Vendor } from '@/lib/definitions';
@@ -27,44 +39,60 @@ type ReportGeneratorProps = {
   vendors: Vendor[];
 };
 
-export default function ReportGenerator({ transactions, categories, vendors }: ReportGeneratorProps) {
+export default function ReportGenerator({
+  transactions,
+  categories,
+  vendors,
+}: ReportGeneratorProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [categoryId, setCategoryId] = useState<string>('all');
   const [vendorId, setVendorId] = useState<string>('all');
   const [summary, setSummary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [reportGenerated, setReportGenerated] = useState(false);
 
-  const handleGenerateReport = () => {
-    let filtered = transactions;
+  const filteredTransactions = useMemo(() => {
+    if (!reportGenerated) {
+        return [];
+    }
 
-    if (dateRange?.from && dateRange?.to) {
-        // Set time to end of day for 'to' date to include all transactions on that day
+    return transactions.filter(t => {
+      const transactionDate = new Date(t.date);
+      let isDateInRange = true;
+      if (dateRange?.from && dateRange?.to) {
         const toDate = new Date(dateRange.to);
         toDate.setHours(23, 59, 59, 999);
+        isDateInRange = transactionDate >= dateRange.from && transactionDate <= toDate;
+      } else if (dateRange?.from) {
+        isDateInRange = transactionDate >= dateRange.from;
+      }
+      
+      const isCategoryMatch = categoryId === 'all' || t.categoryId === categoryId;
+      const isVendorMatch = vendorId === 'all' || t.vendorId === vendorId;
 
-        filtered = filtered.filter(t => {
-            const transactionDate = new Date(t.date);
-            return transactionDate >= dateRange.from! && transactionDate <= toDate;
-        });
-    }
+      return isDateInRange && isCategoryMatch && isVendorMatch;
+    });
+  }, [reportGenerated, transactions, dateRange, categoryId, vendorId]);
 
-    if (categoryId && categoryId !== 'all') {
-        filtered = filtered.filter(t => t.categoryId === categoryId);
-    }
-    
-    if (vendorId && vendorId !== 'all') {
-        filtered = filtered.filter(t => t.vendorId === vendorId);
-    }
 
-    setFilteredTransactions(filtered);
-    setSummary(''); // Clear summary when report is re-generated
+  const handleGenerateReport = () => {
+    setReportGenerated(true);
+    setSummary(''); 
   };
 
   const handleGenerateSummary = async () => {
+    if (filteredTransactions.length === 0) return;
     setIsLoading(true);
     setSummary('');
-    const reportData = JSON.stringify(filteredTransactions.map(t => ({...t, category: getCategoryName(t.categoryId), vendor: getVendorName(t.vendorId) })), null, 2);
+    const reportData = JSON.stringify(
+      filteredTransactions.map(t => ({
+        ...t,
+        category: getCategoryName(t.categoryId),
+        vendor: getVendorName(t.vendorId),
+      })),
+      null,
+      2
+    );
     try {
       const result = await generateReportSummary({ reportData });
       setSummary(result.summary);
@@ -74,13 +102,14 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
     }
     setIsLoading(false);
   };
-  
-  const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name;
+
+  const getCategoryName = (id: string) =>
+    categories.find(c => c.id === id)?.name;
   const getVendorName = (id: string) => vendors.find(v => v.id === id)?.name;
 
   const handleDownloadPdf = () => {
     const doc = new jsPDF();
-    const tableColumn = ["Date", "Description", "Category", "Vendor", "Amount"];
+    const tableColumn = ['Date', 'Description', 'Category', 'Vendor', 'Amount'];
     const tableRows: any[] = [];
 
     let totalInflow = 0;
@@ -92,7 +121,10 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
         ticket.description,
         getCategoryName(ticket.categoryId) || 'N/A',
         getVendorName(ticket.vendorId) || 'N/A',
-        `${ticket.type === 'income' ? '+' : '-'} ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(ticket.amount)}`,
+        `${ticket.type === 'income' ? '+' : '-'} ${new Intl.NumberFormat(
+          'en-US',
+          { style: 'currency', currency: 'USD' }
+        ).format(ticket.amount)}`,
       ];
       tableRows.push(ticketData);
 
@@ -103,41 +135,73 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
       }
     });
 
-    const dateRangeStr = dateRange?.from && dateRange?.to 
-        ? `${new Date(dateRange.from).toLocaleDateString()} - ${new Date(dateRange.to).toLocaleDateString()}`
+    const dateRangeStr =
+      dateRange?.from && dateRange?.to
+        ? `${new Date(dateRange.from).toLocaleDateString()} - ${new Date(
+            dateRange.to
+          ).toLocaleDateString()}`
         : 'All dates';
-    
+
     doc.setFontSize(18);
-    doc.text("Petty Cash Report", 14, 22);
+    doc.text('Petty Cash Report', 14, 22);
     doc.setFontSize(12);
     doc.text(`Date Range: ${dateRangeStr}`, 14, 30);
-    if(categoryId !== 'all') doc.text(`Category: ${getCategoryName(categoryId)}`, 14, 36);
-    if(vendorId !== 'all') doc.text(`Vendor: ${getVendorName(vendorId)}`, 14, 42);
-
+    if (categoryId !== 'all')
+      doc.text(`Category: ${getCategoryName(categoryId)}`, 14, 36);
+    if (vendorId !== 'all')
+      doc.text(`Vendor: ${getVendorName(vendorId)}`, 14, 42);
 
     (doc as any).autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 50,
-        headStyles: { fillColor: [41, 128, 185] },
-        didDrawPage: function (data: any) {
-          data.settings.margin.top = 60;
-        }
+      head: [tableColumn],
+      body: tableRows,
+      startY: 50,
+      headStyles: { fillColor: [41, 128, 185] },
     });
 
     let finalY = (doc as any).lastAutoTable.finalY;
     doc.setFontSize(12);
-    doc.text(`Total Inflow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalInflow)}`, 14, finalY + 10);
-    doc.text(`Total Outflow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalOutflow)}`, 14, finalY + 18);
-    doc.text(`Net Flow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalInflow - totalOutflow)}`, 14, finalY + 26);
-    
+    doc.text(
+      `Total Inflow: ${new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(totalInflow)}`,
+      14,
+      finalY + 10
+    );
+    doc.text(
+      `Total Outflow: ${new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(totalOutflow)}`,
+      14,
+      finalY + 18
+    );
+    doc.text(
+      `Net Flow: ${new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(totalInflow - totalOutflow)}`,
+      14,
+      finalY + 26
+    );
+
     if (summary) {
-        doc.addPage();
-        doc.setFontSize(18);
-        doc.text("AI Summary", 14, 22);
-        doc.setFontSize(12);
-        const splitSummary = doc.splitTextToSize(summary, 180);
-        doc.text(splitSummary, 14, 30);
+        const summaryY = finalY + 40;
+        // Check if there is enough space, otherwise add a new page
+        if (summaryY > 250) {
+            doc.addPage();
+            doc.setFontSize(18);
+            doc.text("AI Summary", 14, 22);
+            doc.setFontSize(12);
+            const splitSummary = doc.splitTextToSize(summary, 180);
+            doc.text(splitSummary, 14, 30);
+        } else {
+            doc.setFontSize(14);
+            doc.text("AI Summary", 14, summaryY - 5);
+            doc.setFontSize(10);
+            const splitSummary = doc.splitTextToSize(summary, 180);
+            doc.text(splitSummary, 14, summaryY);
+        }
     }
 
     doc.save(`PettyCash_Report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -145,116 +209,156 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Report Filters</CardTitle>
-                    <CardDescription>Select criteria to generate your report.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
-                    <Select onValueChange={setCategoryId} value={categoryId}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                     <Select onValueChange={setVendorId} value={vendorId}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a vendor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Vendors</SelectItem>
-                            {vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <Button onClick={handleGenerateReport} className="w-full">Generate Report</Button>
-                </CardContent>
-            </Card>
+      <div className="lg:col-span-1 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Report Filters</CardTitle>
+            <CardDescription>
+              Select criteria to generate your report.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <DateRangePicker onUpdate={range => setDateRange(range.range)} />
+            <Select onValueChange={setCategoryId} value={categoryId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select onValueChange={setVendorId} value={vendorId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vendors</SelectItem>
+                {vendors.map(v => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleGenerateReport} className="w-full">
+              Generate Report
+            </Button>
+          </CardContent>
+        </Card>
 
-            {filteredTransactions.length > 0 && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Bot size={20} /> AI Summary
-                            </div>
-                            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-                                <Download className="mr-2 h-4 w-4" />
-                                PDF
-                            </Button>
-                        </CardTitle>
-                        <CardDescription>An AI-generated analysis of the report data.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {summary && <p className="text-sm">{summary}</p>}
-                        {isLoading && (
-                            <div className="flex items-center justify-center">
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Generating...
-                            </div>
-                        )}
-                        {!summary && !isLoading && <p className="text-sm text-muted-foreground">Click below to generate a summary.</p>}
-                        <Button onClick={handleGenerateSummary} className="w-full mt-4" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                            {summary ? 'Regenerate Summary' : 'Generate Summary'}
-                        </Button>
-                    </CardContent>
-                </Card>
+        {reportGenerated && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bot size={20} /> AI Summary & Export
+                </div>
+                <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={filteredTransactions.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Generate an AI analysis or download the report.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {summary && <p className="text-sm border-l-2 pl-4 italic">{summary}</p>}
+              {isLoading && (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </div>
+              )}
+              {!summary && !isLoading && (
+                <p className="text-sm text-muted-foreground">
+                  Click below to generate a summary for the {filteredTransactions.length} transactions.
+                </p>
+              )}
+              <Button
+                onClick={handleGenerateSummary}
+                className="w-full mt-4"
+                disabled={isLoading || filteredTransactions.length === 0}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Bot className="mr-2 h-4 w-4" />
+                )}
+                {summary ? 'Regenerate Summary' : 'Generate Summary'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="lg:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Generated Report</CardTitle>
+            <CardDescription>
+              {reportGenerated
+                ? `Showing ${filteredTransactions.length} transactions.`
+                : 'No report generated yet.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {reportGenerated && filteredTransactions.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map(t => (
+                    <TableRow key={t.id}>
+                      <TableCell>
+                        {new Date(t.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{t.description}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {getCategoryName(t.categoryId) ?? 'N/A'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {getVendorName(t.vendorId) ?? 'N/A'}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-medium ${
+                          t.type === 'income'
+                            ? 'text-green-600 dark:text-green-500'
+                            : 'text-red-600 dark:text-red-500'
+                        }`}
+                      >
+                        {t.type === 'income' ? '+' : '-'}
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                        }).format(t.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-muted-foreground">
+                <p>Your generated report will appear here.</p>
+              </div>
             )}
-        </div>
-
-        <div className="lg:col-span-2">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Generated Report</CardTitle>
-                     <CardDescription>
-                        {filteredTransactions.length > 0
-                            ? `Showing ${filteredTransactions.length} transactions.`
-                            : "No transactions match the selected filters."
-                        }
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                     {filteredTransactions.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Vendor</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredTransactions.map(t => (
-                                <TableRow key={t.id}>
-                                    <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                                    <TableCell>{t.description}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{getCategoryName(t.categoryId) ?? 'N/A'}</Badge>
-                                    </TableCell>
-                                     <TableCell>{getVendorName(t.vendorId) ?? 'N/A'}</TableCell>
-                                    <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {t.type === 'income' ? '+' : '-'}
-                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount)}
-                                    </TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                     ) : (
-                        <div className="h-64 flex items-center justify-center text-muted-foreground">
-                            <p>Your generated report will appear here.</p>
-                        </div>
-                     )}
-                </CardContent>
-            </Card>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
