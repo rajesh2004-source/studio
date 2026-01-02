@@ -14,8 +14,8 @@ type RecentTransactionsProps = {
     transactions: Transaction[];
 }
 
-export default function RecentTransactions({ transactions }: RecentTransactionsProps) {
-  const vendors = getVendors();
+export default async function RecentTransactions({ transactions }: RecentTransactionsProps) {
+  const vendors = await getVendors();
 
   const recentTransactions = [...transactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())

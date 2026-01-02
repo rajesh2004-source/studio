@@ -29,7 +29,7 @@ export async function login(prevState: AuthState | undefined, formData: FormData
   
   const { email, password } = validatedFields.data;
   
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   if (!user || user.password !== password) {
     return { message: 'Invalid credentials.' };
@@ -60,12 +60,12 @@ export async function signup(prevState: AuthState | undefined, formData: FormDat
   
   const { name, email, password } = validatedFields.data;
 
-  if (findUserByEmail(email)) {
+  if (await findUserByEmail(email)) {
     return { message: 'An account with this email already exists.' };
   }
   
   const newUser = { id: Date.now().toString(), name, email, password };
-  addUser(newUser);
+  await addUser(newUser);
   
   await createSession(newUser);
   redirect('/dashboard');
@@ -122,7 +122,7 @@ export async function createTransaction(prevState: FormState, formData: FormData
     };
 
     try {
-        addTransaction(newTransaction);
+        await addTransaction(newTransaction);
     } catch (error) {
         return { message: 'Database Error: Failed to Create Transaction.' };
     }
@@ -154,7 +154,7 @@ export async function editTransaction(id: string, prevState: FormState, formData
     }
 
     try {
-        updateTransaction(id, validatedFields.data);
+        await updateTransaction(id, validatedFields.data);
     } catch (error) {
         return { message: 'Database Error: Failed to Update Transaction.' };
     }
@@ -166,7 +166,7 @@ export async function editTransaction(id: string, prevState: FormState, formData
 
 export async function deleteTransactionAction(id: string) {
     try {
-        dbDeleteTransaction(id);
+        await dbDeleteTransaction(id);
         revalidatePath('/transactions');
         revalidatePath('/dashboard');
     } catch (error) {

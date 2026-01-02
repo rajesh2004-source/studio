@@ -3,8 +3,8 @@ import RecentTransactions from "@/components/dashboard/recent-transactions";
 import StatCards from "@/components/dashboard/stat-cards";
 import { getTransactions, getInitialBalance } from "@/lib/data";
 
-export default function DashboardPage() {
-    const transactions = getTransactions();
+export default async function DashboardPage() {
+    const transactions = await getTransactions();
     const initialBalance = getInitialBalance();
 
     return (

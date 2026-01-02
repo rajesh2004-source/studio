@@ -1,0 +1,52 @@
+import { JSONFilePreset } from 'lowdb/node';
+import type { User, Vendor, Category, Transaction } from './definitions';
+
+type Schema = {
+  users: User[];
+  vendors: Vendor[];
+  categories: Category[];
+  transactions: Transaction[];
+};
+
+const defaultData: Schema = {
+    users: [
+        { id: '1', name: 'Admin User', email: 'admin@pettyflow.com', password: 'password123' },
+    ],
+    vendors: [
+        { id: 'v1', name: 'Office Supplies Co.', email: 'sales@officesupplies.com' },
+        { id: 'v2', name: 'Quick Eats Cafe', email: 'contact@qec.com' },
+        { id: 'v3', name: 'City Transport', phone: '555-0103' },
+        { id: 'v4', name: 'Tech Solutions Ltd.', contactPerson: 'Jane Doe' },
+        { id: 'v5', name: 'Client A', email: 'contact@clienta.com' },
+    ],
+    categories: [
+        { id: 'c1', name: 'Office Supplies' },
+        { id: 'c2', name: 'Food & Beverage' },
+        { id: 'c3', name: 'Travel' },
+        { id: 'c4', name: 'Software' },
+        { id: 'c5', name: 'Utilities' },
+        { id: 'c6', name: 'Client Revenue' },
+        { id: 'c7', name: 'Miscellaneous' },
+    ],
+    transactions: [
+        { id: 't1', date: '2024-05-20', description: 'Printer paper and pens', vendorId: 'v1', categoryId: 'c1', amount: 55.0, type: 'expense', paymentMode: 'card' },
+        { id: 't2', date: '2024-05-20', description: 'Team lunch', vendorId: 'v2', categoryId: 'c2', amount: 120.5, type: 'expense', paymentMode: 'cash' },
+        { id: 't3', date: '2024-05-19', description: 'Taxi fare for client meeting', vendorId: 'v3', categoryId: 'c3', amount: 35.0, type: 'expense', paymentMode: 'cash' },
+        { id: 't4', date: '2024-05-18', description: 'Monthly subscription for design tool', vendorId: 'v4', categoryId: 'c4', amount: 49.0, type: 'expense', paymentMode: 'card' },
+        { id: 't5', date: '2024-05-15', description: 'Initial cash deposit', vendorId: 'v5', categoryId: 'c6', amount: 1000.0, type: 'income', paymentMode: 'cash', notes: 'Initial funding' },
+        { id: 't6', date: '2024-04-25', description: 'Payment for project phase 1', vendorId: 'v5', categoryId: 'c6', amount: 1500.0, type: 'income', paymentMode: 'online' },
+        { id: 't7', date: '2024-04-10', description: 'Internet Bill', vendorId: 'v3', categoryId: 'c5', amount: 80.0, type: 'expense', paymentMode: 'online' },
+    ],
+};
+
+let db: Awaited<ReturnType<typeof JSONFilePreset<Schema>>> | undefined;
+
+export async function getDb() {
+  if (db) {
+    return db;
+  }
+  // Using a file-based database for persistence. 
+  // In a real production app, you'd use a proper database like PostgreSQL, MySQL, or Firestore.
+  db = await JSONFilePreset<Schema>('db.json', defaultData);
+  return db;
+}

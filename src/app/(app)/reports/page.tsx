@@ -1,10 +1,10 @@
 import { getTransactions, getCategories, getVendors } from "@/lib/data";
 import ReportGenerator from "@/components/reports/report-generator";
 
-export default function ReportsPage() {
-    const transactions = getTransactions();
-    const categories = getCategories();
-    const vendors = getVendors();
+export default async function ReportsPage() {
+    const transactions = await getTransactions();
+    const categories = await getCategories();
+    const vendors = await getVendors();
 
     return (
         <div className="space-y-8">

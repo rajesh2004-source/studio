@@ -2,9 +2,9 @@ import { getVendors, getTransactions } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export default function VendorsPage() {
-    const vendors = getVendors();
-    const transactions = getTransactions();
+export default async function VendorsPage() {
+    const vendors = await getVendors();
+    const transactions = await getTransactions();
 
     const getVendorStats = (vendorId: string) => {
         const vendorTransactions = transactions.filter(t => t.vendorId === vendorId);

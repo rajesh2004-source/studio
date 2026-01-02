@@ -2,10 +2,10 @@ import { getTransactions, getVendors, getCategories } from '@/lib/data';
 import TransactionsTable from '@/components/transactions/transactions-table';
 import { CreateTransactionButton } from '@/components/transactions/buttons';
 
-export default function TransactionsPage() {
-    const transactions = getTransactions();
-    const vendors = getVendors();
-    const categories = getCategories();
+export default async function TransactionsPage() {
+    const transactions = await getTransactions();
+    const vendors = await getVendors();
+    const categories = await getCategories();
 
     return (
         <div className="space-y-8">
