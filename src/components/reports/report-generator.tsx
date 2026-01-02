@@ -27,8 +27,8 @@ type ReportGeneratorProps = {
 
 export default function ReportGenerator({ transactions, categories, vendors }: ReportGeneratorProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [vendorId, setVendorId] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<string>('all');
+  const [vendorId, setVendorId] = useState<string>('all');
   const [summary, setSummary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
@@ -43,11 +43,11 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
         });
     }
 
-    if (categoryId) {
+    if (categoryId && categoryId !== 'all') {
         filtered = filtered.filter(t => t.categoryId === categoryId);
     }
     
-    if (vendorId) {
+    if (vendorId && vendorId !== 'all') {
         filtered = filtered.filter(t => t.vendorId === vendorId);
     }
 
@@ -86,7 +86,7 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
                             <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Categories</SelectItem>
+                            <SelectItem value="all">All Categories</SelectItem>
                             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
@@ -95,7 +95,7 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
                             <SelectValue placeholder="Select a vendor" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Vendors</SelectItem>
+                            <SelectItem value="all">All Vendors</SelectItem>
                             {vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
