@@ -1,11 +1,12 @@
 import BalanceChart from "@/components/dashboard/balance-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
 import StatCards from "@/components/dashboard/stat-cards";
-import { getTransactions, getInitialBalance } from "@/lib/data";
+import { getTransactions, getInitialBalance, getVendors } from "@/lib/data";
 
 export default async function DashboardPage() {
     const transactions = await getTransactions();
     const initialBalance = getInitialBalance();
+    const vendors = await getVendors();
 
     return (
         <div className="space-y-8">
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
                     <BalanceChart transactions={transactions} />
                 </div>
                 <div className="lg:col-span-3">
-                    <RecentTransactions transactions={transactions} />
+                    <RecentTransactions transactions={transactions} vendors={vendors} />
                 </div>
             </div>
         </div>

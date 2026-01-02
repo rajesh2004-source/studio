@@ -10,24 +10,13 @@ import {
 import type { Transaction, Vendor } from '@/lib/definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
-import { useEffect, useState } from 'react';
-import { getVendors as getVendorsData } from '@/lib/data';
 
 type RecentTransactionsProps = {
     transactions: Transaction[];
+    vendors: Vendor[];
 }
 
-export default function RecentTransactions({ transactions }: RecentTransactionsProps) {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-
-  useEffect(() => {
-    async function loadVendors() {
-        const vendorsData = await getVendorsData();
-        setVendors(vendorsData);
-    }
-    loadVendors();
-  }, []);
-
+export default function RecentTransactions({ transactions, vendors }: RecentTransactionsProps) {
   const recentTransactions = [...transactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
