@@ -12,15 +12,18 @@ export default function ReportsPage() {
         categories: Category[];
         vendors: Vendor[];
     } | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function fetchData() {
+            setLoading(true);
             const [transactions, categories, vendors] = await Promise.all([
                 getTransactions(),
                 getCategories(),
                 getVendors(),
             ]);
             setData({ transactions, categories, vendors });
+            setLoading(false);
         }
         fetchData();
     }, []);
@@ -35,13 +38,7 @@ export default function ReportsPage() {
                     Generate reports and get AI-powered insights.
                 </p>
             </div>
-            {data ? (
-                <ReportGenerator 
-                    transactions={data.transactions} 
-                    categories={data.categories} 
-                    vendors={data.vendors} 
-                />
-            ) : (
+            {loading || !data ? (
                 <div className="space-y-8">
                     <CardSkeleton />
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -53,6 +50,12 @@ export default function ReportsPage() {
                         </div>
                     </div>
                 </div>
+            ) : (
+                <ReportGenerator 
+                    transactions={data.transactions} 
+                    categories={data.categories} 
+                    vendors={data.vendors} 
+                />
             )}
         </div>
     );
