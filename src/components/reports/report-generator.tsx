@@ -51,7 +51,7 @@ export default function ReportGenerator({
   const [isLoading, setIsLoading] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
 
-  // Auto-generate report on initial load
+  // Auto-generate report on initial load and when filters change
   useEffect(() => {
     handleGenerateReport();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,14 +66,16 @@ export default function ReportGenerator({
     return transactions.filter(t => {
       const transactionDate = new Date(t.date);
       let isDateInRange = true;
-      if (dateRange?.from && dateRange?.to) {
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        isDateInRange = transactionDate >= dateRange.from && transactionDate <= toDate;
-      } else if (dateRange?.from) {
-        const fromDate = new Date(dateRange.from)
-        fromDate.setHours(0,0,0,0)
-        isDateInRange = transactionDate >= fromDate;
+      if (dateRange?.from) {
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0); // Start of the day
+        if (dateRange.to) {
+            const toDate = new Date(dateRange.to);
+            toDate.setHours(23, 59, 59, 999); // End of the day
+            isDateInRange = transactionDate >= fromDate && transactionDate <= toDate;
+        } else {
+            isDateInRange = transactionDate >= fromDate;
+        }
       }
       
       const isCategoryMatch = categoryId === 'all' || t.categoryId === categoryId;
@@ -145,10 +147,12 @@ export default function ReportGenerator({
     });
 
     const dateRangeStr =
-      dateRange?.from && dateRange?.to
-        ? `${new Date(dateRange.from).toLocaleDateString()} - ${new Date(
-            dateRange.to
-          ).toLocaleDateString()}`
+      dateRange?.from
+        ? dateRange.to
+          ? `${new Date(dateRange.from).toLocaleDateString()} - ${new Date(
+              dateRange.to
+            ).toLocaleDateString()}`
+          : `From ${new Date(dateRange.from).toLocaleDateString()}`
         : 'All dates';
 
     doc.setFontSize(18);
@@ -167,7 +171,7 @@ export default function ReportGenerator({
       headStyles: { fillColor: [41, 128, 185] },
     });
 
-    let finalY = (doc as any).lastAutoTable.finalY;
+    let finalY = (doc as any).lastAutoTable.finalY || 50;
     doc.setFontSize(12);
     doc.text(
       `Total Inflow: ${new Intl.NumberFormat('en-US', {
@@ -316,7 +320,7 @@ export default function ReportGenerator({
                 </Table>
                 ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
-                    <p>Your generated report will appear here.</p>
+                    <p>{reportGenerated ? 'No transactions found for the selected filters.' : 'Your generated report will appear here.'}</p>
                 </div>
                 )}
             </CardContent>
