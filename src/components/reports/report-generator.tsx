@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -51,6 +51,13 @@ export default function ReportGenerator({
   const [isLoading, setIsLoading] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
 
+  // Auto-generate report on initial load
+  useEffect(() => {
+    handleGenerateReport();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions, dateRange, categoryId, vendorId]);
+
+
   const filteredTransactions = useMemo(() => {
     if (!reportGenerated) {
         return [];
@@ -64,7 +71,9 @@ export default function ReportGenerator({
         toDate.setHours(23, 59, 59, 999);
         isDateInRange = transactionDate >= dateRange.from && transactionDate <= toDate;
       } else if (dateRange?.from) {
-        isDateInRange = transactionDate >= dateRange.from;
+        const fromDate = new Date(dateRange.from)
+        fromDate.setHours(0,0,0,0)
+        isDateInRange = transactionDate >= fromDate;
       }
       
       const isCategoryMatch = categoryId === 'all' || t.categoryId === categoryId;
@@ -208,16 +217,15 @@ export default function ReportGenerator({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1 space-y-6">
-        <Card>
+    <div className="space-y-8">
+      <Card>
           <CardHeader>
             <CardTitle>Report Filters</CardTitle>
             <CardDescription>
-              Select criteria to generate your report.
+              Select criteria to generate your report. The report will update automatically.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <DateRangePicker onUpdate={range => setDateRange(range.range)} />
             <Select onValueChange={setCategoryId} value={categoryId}>
               <SelectTrigger>
@@ -245,119 +253,121 @@ export default function ReportGenerator({
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleGenerateReport} className="w-full">
-              Generate Report
+             <Button onClick={handleGenerateReport} className="w-full">
+              Refresh Report
             </Button>
           </CardContent>
         </Card>
 
-        {reportGenerated && (
-          <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-2">
+            <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bot size={20} /> AI Summary & Export
-                </div>
-                <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={filteredTransactions.length === 0}>
-                  <Download className="mr-2 h-4 w-4" />
-                  PDF
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Generate an AI analysis or download the report.
-              </CardDescription>
+                <CardTitle>Generated Report</CardTitle>
+                <CardDescription>
+                {reportGenerated
+                    ? `Showing ${filteredTransactions.length} transactions.`
+                    : 'No report generated yet.'}
+                </CardDescription>
             </CardHeader>
             <CardContent>
-              {summary && <p className="text-sm border-l-2 pl-4 italic">{summary}</p>}
-              {isLoading && (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </div>
-              )}
-              {!summary && !isLoading && (
-                <p className="text-sm text-muted-foreground">
-                  Click below to generate a summary for the {filteredTransactions.length} transactions.
-                </p>
-              )}
-              <Button
-                onClick={handleGenerateSummary}
-                className="w-full mt-4"
-                disabled={isLoading || filteredTransactions.length === 0}
-              >
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Bot className="mr-2 h-4 w-4" />
-                )}
-                {summary ? 'Regenerate Summary' : 'Generate Summary'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      <div className="lg:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Generated Report</CardTitle>
-            <CardDescription>
-              {reportGenerated
-                ? `Showing ${filteredTransactions.length} transactions.`
-                : 'No report generated yet.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {reportGenerated && filteredTransactions.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.map(t => (
-                    <TableRow key={t.id}>
-                      <TableCell>
-                        {new Date(t.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>{t.description}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {getCategoryName(t.categoryId) ?? 'N/A'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getVendorName(t.vendorId) ?? 'N/A'}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          t.type === 'income'
-                            ? 'text-green-600 dark:text-green-500'
-                            : 'text-red-600 dark:text-red-500'
-                        }`}
-                      >
-                        {t.type === 'income' ? '+' : '-'}
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                        }).format(t.amount)}
-                      </TableCell>
+                {reportGenerated && filteredTransactions.length > 0 ? (
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                <p>Your generated report will appear here.</p>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredTransactions.map(t => (
+                        <TableRow key={t.id}>
+                        <TableCell>
+                            {new Date(t.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{t.description}</TableCell>
+                        <TableCell>
+                            <Badge variant="outline">
+                            {getCategoryName(t.categoryId) ?? 'N/A'}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>
+                            {getVendorName(t.vendorId) ?? 'N/A'}
+                        </TableCell>
+                        <TableCell
+                            className={`text-right font-medium ${
+                            t.type === 'income'
+                                ? 'text-green-600 dark:text-green-500'
+                                : 'text-red-600 dark:text-red-500'
+                            }`}
+                        >
+                            {t.type === 'income' ? '+' : '-'}
+                            {new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            }).format(t.amount)}
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                    <p>Your generated report will appear here.</p>
+                </div>
+                )}
+            </CardContent>
+            </Card>
+        </div>
+        <div className="lg:col-span-1 space-y-6">
+            {reportGenerated && (
+            <Card>
+                <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                    <Bot size={20} /> AI Summary & Export
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={filteredTransactions.length === 0}>
+                    <Download className="mr-2 h-4 w-4" />
+                    PDF
+                    </Button>
+                </CardTitle>
+                <CardDescription>
+                    Generate an AI analysis or download the report.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                {summary && <p className="text-sm border-l-2 pl-4 italic">{summary}</p>}
+                {isLoading && (
+                    <div className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                    </div>
+                )}
+                {!summary && !isLoading && (
+                    <p className="text-sm text-muted-foreground">
+                    Click below to generate a summary for the {filteredTransactions.length} transactions.
+                    </p>
+                )}
+                <Button
+                    onClick={handleGenerateSummary}
+                    className="w-full mt-4"
+                    disabled={isLoading || filteredTransactions.length === 0}
+                >
+                    {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                    <Bot className="mr-2 h-4 w-4" />
+                    )}
+                    {summary ? 'Regenerate Summary' : 'Generate Summary'}
+                </Button>
+                </CardContent>
+            </Card>
             )}
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
