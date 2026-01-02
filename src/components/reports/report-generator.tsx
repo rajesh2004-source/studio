@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DateRangePicker } from '@/components/reports/date-range-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateReportSummary } from '@/ai/flows/generate-ai-summaries';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, Download, Loader2 } from 'lucide-react';
 import { Category, Transaction, Vendor } from '@/lib/definitions';
 import { DateRange } from 'react-day-picker';
 import { Badge } from '../ui/badge';
@@ -18,6 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 type ReportGeneratorProps = {
   transactions: Transaction[];
@@ -37,9 +39,13 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
     let filtered = transactions;
 
     if (dateRange?.from && dateRange?.to) {
+        // Set time to end of day for 'to' date to include all transactions on that day
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+
         filtered = filtered.filter(t => {
             const transactionDate = new Date(t.date);
-            return transactionDate >= dateRange.from! && transactionDate <= dateRange.to!;
+            return transactionDate >= dateRange.from! && transactionDate <= toDate;
         });
     }
 
@@ -52,12 +58,13 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
     }
 
     setFilteredTransactions(filtered);
+    setSummary(''); // Clear summary when report is re-generated
   };
 
   const handleGenerateSummary = async () => {
     setIsLoading(true);
     setSummary('');
-    const reportData = JSON.stringify(filteredTransactions, null, 2);
+    const reportData = JSON.stringify(filteredTransactions.map(t => ({...t, category: getCategoryName(t.categoryId), vendor: getVendorName(t.vendorId) })), null, 2);
     try {
       const result = await generateReportSummary({ reportData });
       setSummary(result.summary);
@@ -70,6 +77,71 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
   
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name;
   const getVendorName = (id: string) => vendors.find(v => v.id === id)?.name;
+
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF();
+    const tableColumn = ["Date", "Description", "Category", "Vendor", "Amount"];
+    const tableRows: any[] = [];
+
+    let totalInflow = 0;
+    let totalOutflow = 0;
+
+    filteredTransactions.forEach(ticket => {
+      const ticketData = [
+        new Date(ticket.date).toLocaleDateString(),
+        ticket.description,
+        getCategoryName(ticket.categoryId) || 'N/A',
+        getVendorName(ticket.vendorId) || 'N/A',
+        `${ticket.type === 'income' ? '+' : '-'} ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(ticket.amount)}`,
+      ];
+      tableRows.push(ticketData);
+
+      if (ticket.type === 'income') {
+        totalInflow += ticket.amount;
+      } else {
+        totalOutflow += ticket.amount;
+      }
+    });
+
+    const dateRangeStr = dateRange?.from && dateRange?.to 
+        ? `${new Date(dateRange.from).toLocaleDateString()} - ${new Date(dateRange.to).toLocaleDateString()}`
+        : 'All dates';
+    
+    doc.setFontSize(18);
+    doc.text("Petty Cash Report", 14, 22);
+    doc.setFontSize(12);
+    doc.text(`Date Range: ${dateRangeStr}`, 14, 30);
+    if(categoryId !== 'all') doc.text(`Category: ${getCategoryName(categoryId)}`, 14, 36);
+    if(vendorId !== 'all') doc.text(`Vendor: ${getVendorName(vendorId)}`, 14, 42);
+
+
+    (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 50,
+        headStyles: { fillColor: [41, 128, 185] },
+        didDrawPage: function (data: any) {
+          data.settings.margin.top = 60;
+        }
+    });
+
+    let finalY = (doc as any).lastAutoTable.finalY;
+    doc.setFontSize(12);
+    doc.text(`Total Inflow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalInflow)}`, 14, finalY + 10);
+    doc.text(`Total Outflow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalOutflow)}`, 14, finalY + 18);
+    doc.text(`Net Flow: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalInflow - totalOutflow)}`, 14, finalY + 26);
+    
+    if (summary) {
+        doc.addPage();
+        doc.setFontSize(18);
+        doc.text("AI Summary", 14, 22);
+        doc.setFontSize(12);
+        const splitSummary = doc.splitTextToSize(summary, 180);
+        doc.text(splitSummary, 14, 30);
+    }
+
+    doc.save(`PettyCash_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -106,8 +178,14 @@ export default function ReportGenerator({ transactions, categories, vendors }: R
             {filteredTransactions.length > 0 && (
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Bot size={20} /> AI Summary
+                        <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Bot size={20} /> AI Summary
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+                                <Download className="mr-2 h-4 w-4" />
+                                PDF
+                            </Button>
                         </CardTitle>
                         <CardDescription>An AI-generated analysis of the report data.</CardDescription>
                     </CardHeader>

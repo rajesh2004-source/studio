@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/sheet';
 import TransactionForm from './transaction-form';
 import type { Transaction, Vendor, Category } from '@/lib/definitions';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { Edit, PlusCircle, Trash2 } from 'lucide-react';
 import { DropdownMenuItem } from '../ui/dropdown-menu';
 
 export function CreateTransactionButton({ vendors, categories }: { vendors: Vendor[], categories: Category[] }) {
@@ -60,7 +60,10 @@ export function EditTransactionSheet({ transaction, vendors, categories }: { tra
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">Edit</div>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  <span>Edit</span>
+                </DropdownMenuItem>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-lg">
                 <SheetHeader>
@@ -96,9 +99,9 @@ export function DeleteTransactionDialog({ transactionId }: { transactionId: stri
   return (
     <Dialog>
       <DialogTrigger asChild>
-         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            <Trash2 className="mr-2 h-4 w-4 text-red-500" />
-            <span className="text-red-500">Delete</span>
+         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:bg-red-50 focus:text-red-600">
+            <Trash2 className="mr-2 h-4 w-4" />
+            <span>Delete</span>
         </DropdownMenuItem>
       </DialogTrigger>
       <DialogContent>

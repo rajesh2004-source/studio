@@ -59,6 +59,7 @@ export async function deleteVendor(id: string) {
     }
     db.data.vendors = db.data.vendors.filter(v => v.id !== id);
     await db.write();
+    return true;
 }
 
 

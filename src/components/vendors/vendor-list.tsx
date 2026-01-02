@@ -40,7 +40,7 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
         const transactionCount = vendorTransactions.length;
-        return { totalSpent, totalEarned, transactionCount, transactions: vendorTransactions };
+        return { totalSpent, totalEarned, transactionCount, transactions: vendorTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
     }
 
     const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name;
@@ -56,11 +56,11 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                                 <Avatar className="w-12 h-12">
                                     <AvatarFallback>{vendor.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <div>
+                                <div className="space-y-1">
                                     <CardTitle className="text-xl">{vendor.name}</CardTitle>
                                     {vendor.email && <CardDescription>{vendor.email}</CardDescription>}
                                     {vendor.phone && <CardDescription>{vendor.phone}</CardDescription>}
-                                    {vendor.contactPerson && <CardDescription>Contact: {vendor.contactPerson}</CardDescription>}
+                                    {vendor.contactPerson && <CardDescription className="text-xs">Contact: {vendor.contactPerson}</CardDescription>}
                                 </div>
                             </div>
                             <DropdownMenu>
@@ -73,7 +73,7 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                                 <DropdownMenuContent align="end">
                                     <EditVendorSheet vendor={vendor} />
                                     <DropdownMenuSeparator />
-                                    <DeleteVendorDialog vendorId={vendor.id} />
+                                    <DeleteVendorDialog vendorId={vendor.id} hasTransactions={stats.transactionCount > 0} />
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </CardHeader>
@@ -84,20 +84,20 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                             </div>
                              <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Total Earned</span>
-                                <span className="font-medium text-green-600">
+                                <span className="font-medium text-green-600 dark:text-green-500">
                                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.totalEarned)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Total Spent</span>
-                                <span className="font-medium text-red-600">
+                                <span className="font-medium text-red-600 dark:text-red-500">
                                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.totalSpent)}
                                 </span>
                             </div>
 
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button variant="link" className="px-0 h-auto text-primary text-sm mt-2">View Transactions</Button>
+                                    <Button variant="link" className="px-0 h-auto text-primary text-sm mt-2" disabled={stats.transactionCount === 0}>View Transactions</Button>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-4xl">
                                     <DialogHeader>
@@ -121,7 +121,7 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                                                         <TableCell>
                                                             <Badge variant="outline">{getCategoryName(t.categoryId) ?? 'N/A'}</Badge>
                                                         </TableCell>
-                                                        <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                                        <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                                                             {t.type === 'income' ? '+' : '-'}
                                                             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount)}
                                                         </TableCell>

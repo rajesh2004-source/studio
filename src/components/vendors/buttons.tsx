@@ -21,7 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { Edit, PlusCircle, Trash2 } from 'lucide-react';
 import { DropdownMenuItem } from '../ui/dropdown-menu';
 import type { Vendor } from '@/lib/definitions';
 import VendorForm from './vendor-form';
@@ -62,7 +62,10 @@ export function EditVendorSheet({ vendor }: { vendor: Vendor }) {
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
+                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Edit</span>
+                </DropdownMenuItem>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-lg">
                 <SheetHeader>
@@ -70,7 +73,7 @@ export function EditVendorSheet({ vendor }: { vendor: Vendor }) {
                     <SheetDescription>
                         Update the vendor details. Click save when you&apos;re done.
                     </SheetDescription>
-                </SheetHeader>
+                </Header>
                  <div className="mt-4">
                     <VendorForm 
                         action={updateVendorWithId} 
@@ -92,10 +95,18 @@ function DeleteButton() {
     )
 }
 
-export function DeleteVendorDialog({ vendorId }: { vendorId: string }) {
+export function DeleteVendorDialog({ vendorId, hasTransactions }: { vendorId: string, hasTransactions: boolean }) {
   const { toast } = useToast();
   
   const handleDelete = async () => {
+    if (hasTransactions) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: "Cannot delete vendor with associated transactions.",
+        });
+        return;
+    }
     const result = await deleteVendor(vendorId);
     if (result?.message) {
       toast({
@@ -109,7 +120,7 @@ export function DeleteVendorDialog({ vendorId }: { vendorId: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:bg-red-50 focus:text-red-600">
+         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:bg-red-50 focus:text-red-600" disabled={hasTransactions}>
             <Trash2 className="mr-2 h-4 w-4" />
             <span>Delete</span>
         </DropdownMenuItem>
@@ -118,7 +129,7 @@ export function DeleteVendorDialog({ vendorId }: { vendorId: string }) {
         <DialogHeader>
           <DialogTitle>Are you sure?</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. This will permanently delete the vendor. You can only delete vendors with no associated transactions.
+            This action cannot be undone. This will permanently delete the vendor.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

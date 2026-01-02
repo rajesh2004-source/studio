@@ -66,17 +66,6 @@
   ],
   "transactions": [
     {
-      "id": "t1767369453880",
-      "date": "2026-01-02",
-      "description": "Print",
-      "vendorId": "v1",
-      "categoryId": "c4",
-      "amount": 500,
-      "type": "income",
-      "paymentMode": "online",
-      "notes": ""
-    },
-    {
       "id": "t1",
       "date": "2024-05-20",
       "description": "Printer paper and pens",
@@ -146,6 +135,17 @@
       "amount": 80,
       "type": "expense",
       "paymentMode": "online"
+    },
+    {
+      "id": "t1767369453880",
+      "date": "2024-01-02",
+      "description": "Print",
+      "vendorId": "v1",
+      "categoryId": "c4",
+      "amount": 500,
+      "type": "income",
+      "paymentMode": "online",
+      "notes": ""
     }
   ]
 }
