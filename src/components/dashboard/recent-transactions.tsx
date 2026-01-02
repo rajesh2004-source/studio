@@ -22,9 +22,9 @@ export default async function RecentTransactions({ transactions }: RecentTransac
     .slice(0, 5);
   
   const formatCurrency = (amount: number, type: 'income' | 'expense') => {
-    const formatted = new Intl.NumberFormat('en-US', {
+    const formatted = new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
     }).format(amount);
     return type === 'income' ? `+${formatted}` : `-${formatted}`;
   };

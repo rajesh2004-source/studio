@@ -90,9 +90,9 @@ export default function TransactionsTable({
       cell: ({ row }) => {
         const amount = parseFloat(row.getValue('amount'));
         const type = row.original.type;
-        const formatted = new Intl.NumberFormat('en-US', {
+        const formatted = new Intl.NumberFormat('en-IN', {
           style: 'currency',
-          currency: 'USD',
+          currency: 'INR',
         }).format(amount);
         return <div className={`font-medium ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{type === 'income' ? `+${formatted}` : `-${formatted}`}</div>;
       },

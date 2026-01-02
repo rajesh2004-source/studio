@@ -85,13 +85,13 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                              <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Total Earned</span>
                                 <span className="font-medium text-green-600 dark:text-green-500">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.totalEarned)}
+                                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalEarned)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Total Spent</span>
                                 <span className="font-medium text-red-600 dark:text-red-500">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.totalSpent)}
+                                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalSpent)}
                                 </span>
                             </div>
 
@@ -123,7 +123,7 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                                                         </TableCell>
                                                         <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                                                             {t.type === 'income' ? '+' : '-'}
-                                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount)}
+                                                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(t.amount)}
                                                         </TableCell>
                                                     </TableRow>
                                                 )) : (

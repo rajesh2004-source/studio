@@ -133,8 +133,8 @@ export default function ReportGenerator({
         getCategoryName(ticket.categoryId) || 'N/A',
         getVendorName(ticket.vendorId) || 'N/A',
         `${ticket.type === 'income' ? '+' : '-'} ${new Intl.NumberFormat(
-          'en-US',
-          { style: 'currency', currency: 'USD' }
+          'en-IN',
+          { style: 'currency', currency: 'INR' }
         ).format(ticket.amount)}`,
       ];
       tableRows.push(ticketData);
@@ -174,25 +174,25 @@ export default function ReportGenerator({
     let finalY = (doc as any).lastAutoTable.finalY || 50;
     doc.setFontSize(12);
     doc.text(
-      `Total Inflow: ${new Intl.NumberFormat('en-US', {
+      `Total Inflow: ${new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'INR',
       }).format(totalInflow)}`,
       14,
       finalY + 10
     );
     doc.text(
-      `Total Outflow: ${new Intl.NumberFormat('en-US', {
+      `Total Outflow: ${new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'INR',
       }).format(totalOutflow)}`,
       14,
       finalY + 18
     );
     doc.text(
-      `Net Flow: ${new Intl.NumberFormat('en-US', {
+      `Net Flow: ${new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'INR',
       }).format(totalInflow - totalOutflow)}`,
       14,
       finalY + 26
@@ -309,9 +309,9 @@ export default function ReportGenerator({
                             }`}
                         >
                             {t.type === 'income' ? '+' : '-'}
-                            {new Intl.NumberFormat('en-US', {
+                            {new Intl.NumberFormat('en-IN', {
                             style: 'currency',
-                            currency: 'USD',
+                            currency: 'INR',
                             }).format(t.amount)}
                         </TableCell>
                         </TableRow>
