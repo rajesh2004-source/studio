@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -5,17 +7,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { Transaction } from '@/lib/definitions';
-import { getVendors } from '@/lib/data';
+import type { Transaction, Vendor } from '@/lib/definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
+import { useEffect, useState } from 'react';
+import { getVendors as getVendorsData } from '@/lib/data';
 
 type RecentTransactionsProps = {
     transactions: Transaction[];
 }
 
-export default async function RecentTransactions({ transactions }: RecentTransactionsProps) {
-  const vendors = await getVendors();
+export default function RecentTransactions({ transactions }: RecentTransactionsProps) {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  useEffect(() => {
+    async function loadVendors() {
+        const vendorsData = await getVendorsData();
+        setVendors(vendorsData);
+    }
+    loadVendors();
+  }, []);
 
   const recentTransactions = [...transactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -23,10 +34,11 @@ export default async function RecentTransactions({ transactions }: RecentTransac
   
   const formatCurrency = (amount: number, type: 'income' | 'expense') => {
     const formatted = new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     }).format(amount);
-    return type === 'income' ? `+${formatted}` : `-${formatted}`;
+    const symbol = `RS ${formatted}`;
+    return type === 'income' ? `+${symbol}` : `-${symbol}`;
   };
 
   const getVendorInitial = (vendorId: string) => {

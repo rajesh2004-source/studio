@@ -45,6 +45,19 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
 
     const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name;
 
+    const formatCurrency = (amount: number) => {
+        const formatted = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount);
+        return `RS ${formatted}`;
+    };
+
+    const formatCurrencyWithType = (amount: number, type: 'income' | 'expense') => {
+        const formatted = formatCurrency(amount);
+        return type === 'income' ? `+${formatted}` : `-${formatted}`;
+    }
+
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {vendors.map(vendor => {
@@ -85,13 +98,13 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                              <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Total Earned</span>
                                 <span className="font-medium text-green-600 dark:text-green-500">
-                                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalEarned)}
+                                    {formatCurrency(stats.totalEarned)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Total Spent</span>
                                 <span className="font-medium text-red-600 dark:text-red-500">
-                                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalSpent)}
+                                    {formatCurrency(stats.totalSpent)}
                                 </span>
                             </div>
 
@@ -122,8 +135,7 @@ export default function VendorList({ vendors, transactions, categories }: Vendor
                                                             <Badge variant="outline">{getCategoryName(t.categoryId) ?? 'N/A'}</Badge>
                                                         </TableCell>
                                                         <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
-                                                            {t.type === 'income' ? '+' : '-'}
-                                                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(t.amount)}
+                                                            {formatCurrencyWithType(t.amount, t.type)}
                                                         </TableCell>
                                                     </TableRow>
                                                 )) : (

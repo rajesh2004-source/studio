@@ -91,10 +91,12 @@ export default function TransactionsTable({
         const amount = parseFloat(row.getValue('amount'));
         const type = row.original.type;
         const formatted = new Intl.NumberFormat('en-IN', {
-          style: 'currency',
-          currency: 'INR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         }).format(amount);
-        return <div className={`font-medium ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{type === 'income' ? `+${formatted}` : `-${formatted}`}</div>;
+        const symbol = `RS ${formatted}`;
+
+        return <div className={`font-medium ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{type === 'income' ? `+${symbol}` : `-${symbol}`}</div>;
       },
     },
     {

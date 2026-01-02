@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -24,10 +26,11 @@ export default function StatCards({ transactions, initialBalance }: StatCardsPro
   const currentBalance = initialBalance + totalInflow - totalOutflow;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    const formatted = new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     }).format(amount);
+    return `RS ${formatted}`;
   };
   
   return (

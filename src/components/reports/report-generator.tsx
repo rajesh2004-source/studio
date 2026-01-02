@@ -118,6 +118,20 @@ export default function ReportGenerator({
     categories.find(c => c.id === id)?.name;
   const getVendorName = (id: string) => vendors.find(v => v.id === id)?.name;
 
+  const formatCurrency = (amount: number) => {
+    const formatted = new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+    return `RS ${formatted}`;
+  };
+
+  const formatCurrencyWithType = (amount: number, type: 'income' | 'expense') => {
+    const formatted = formatCurrency(amount);
+    return type === 'income' ? `+${formatted}` : `-${formatted}`;
+  }
+
+
   const handleDownloadPdf = () => {
     const doc = new jsPDF();
     const tableColumn = ['Date', 'Description', 'Category', 'Vendor', 'Amount'];
@@ -132,10 +146,7 @@ export default function ReportGenerator({
         ticket.description,
         getCategoryName(ticket.categoryId) || 'N/A',
         getVendorName(ticket.vendorId) || 'N/A',
-        `${ticket.type === 'income' ? '+' : '-'} ${new Intl.NumberFormat(
-          'en-IN',
-          { style: 'currency', currency: 'INR' }
-        ).format(ticket.amount)}`,
+        formatCurrencyWithType(ticket.amount, ticket.type),
       ];
       tableRows.push(ticketData);
 
@@ -174,26 +185,17 @@ export default function ReportGenerator({
     let finalY = (doc as any).lastAutoTable.finalY || 50;
     doc.setFontSize(12);
     doc.text(
-      `Total Inflow: ${new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-      }).format(totalInflow)}`,
+      `Total Inflow: ${formatCurrency(totalInflow)}`,
       14,
       finalY + 10
     );
     doc.text(
-      `Total Outflow: ${new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-      }).format(totalOutflow)}`,
+      `Total Outflow: ${formatCurrency(totalOutflow)}`,
       14,
       finalY + 18
     );
     doc.text(
-      `Net Flow: ${new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-      }).format(totalInflow - totalOutflow)}`,
+      `Net Flow: ${formatCurrency(totalInflow - totalOutflow)}`,
       14,
       finalY + 26
     );
@@ -308,11 +310,7 @@ export default function ReportGenerator({
                                 : 'text-red-600 dark:text-red-500'
                             }`}
                         >
-                            {t.type === 'income' ? '+' : '-'}
-                            {new Intl.NumberFormat('en-IN', {
-                            style: 'currency',
-                            currency: 'INR',
-                            }).format(t.amount)}
+                            {formatCurrencyWithType(t.amount, t.type)}
                         </TableCell>
                         </TableRow>
                     ))}
